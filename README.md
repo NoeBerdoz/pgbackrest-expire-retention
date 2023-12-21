@@ -45,7 +45,7 @@ The script follows the following retention policy:
 - **Monthly Backups:** Retain the oldest backup per month from the last 12 months.
 - **Yearly Backups:** Retain the oldest backup per year.
 
-When entering a new year, the retention will stick to the monthy approach for the last 365 days.
+When entering a new year, the retention will stick to the monthly approach for the last 365 days.
 
 ---
 

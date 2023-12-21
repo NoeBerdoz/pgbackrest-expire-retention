@@ -31,6 +31,8 @@ To use the script, follow these steps:
     ```
    _Note that the script needs the permissions to run pgbackrest commands._
 
+   **The script is currently with the --dry-run option set, so you can see what would happens in the logs, if you want to exit the dry run, edit `expire_command` variable**
+
 ## Configuration
 
 The script relies on the `pgbackrest` commands `info` and `expire`. Ensure that the script is executed at an appropriate frequency to achieve the desired backup retention strategy.

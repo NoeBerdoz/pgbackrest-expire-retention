@@ -48,5 +48,10 @@ The script follows the following retention policy:
 When entering a new year, the retention will stick to the monthly approach for the last 365 days.
 
 ---
+# Potential improvements
+- Optimize the <365 days retentions
+- Make the retention strategy configurable
+- What if this was all set in an Odoo module
+---
 
 Feel free to customize the content as needed for your specific project.

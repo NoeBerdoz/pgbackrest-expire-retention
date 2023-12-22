@@ -12,6 +12,7 @@ try:
     from datetime import datetime, timedelta
     import subprocess
     import time
+    import argparse
     import humanize
     from itertools import groupby
 except ImportError as error:
@@ -24,7 +25,16 @@ except ImportError as error:
 FULL = 'full'
 INCREMENTAL = 'incr'
 
-log_file_path = 'backup_retention.log'
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description='Backup Retention Script')
+parser.add_argument('--stanza', default='db-production-swiss', help='specify the PgBackRest stanza')
+parser.add_argument('--log-file', default='backup_retention.log', help='specify the log file path')
+parser.add_argument('--dry-run', action='store_true', help='run in dry-run mode')
+args = parser.parse_args()
+
+dry_run = args.dry_run
+stanza = args.stanza
+log_file_path = args.log_file
 
 command = "sudo pgbackrest info --output=json"
 result = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -70,13 +80,13 @@ def expire_backup(backup):
     backup_label = backup['label']
     backup_size = backup['info']['repository']['delta']
 
-    # TODO -> no dry-run
-    expire_command = f"sudo pgbackrest expire --stanza=db-production-swiss --set={backup_label} --log-level-console=detail --dry-run"
+    expire_command = f"sudo pgbackrest expire --stanza={stanza} --set={backup_label} --log-level-console=detail {'--dry-run' if dry_run else ''}"
     add_log_line(f"[+] {expire_command}")
     # print(f"[-] expiring {backup_label}")
     counter_backups_expired += 1
     counter_expired_size += backup_size
-    # DISABLING THIS WHILE DEV
+
+    # DISABLE THIS WHILE DEV
     # Execute the expire command
     process = subprocess.Popen(expire_command, shell=True, stdout=subprocess.PIPE, text=True, bufsize=1,
                                universal_newlines=True)

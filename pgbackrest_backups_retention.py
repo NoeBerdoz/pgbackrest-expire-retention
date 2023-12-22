@@ -28,7 +28,7 @@ INCREMENTAL = 'incr'
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Backup Retention Script')
 parser.add_argument('--stanza', default='db-production-swiss', help='specify the PgBackRest stanza')
-parser.add_argument('--log-file', default='backup_retention.log', help='specify the log file path')
+parser.add_argument('--log-file', default='pgbackrest_backup_retention.log', help='specify the log file path')
 parser.add_argument('--dry-run', action='store_true', help='run in dry-run mode')
 args = parser.parse_args()
 

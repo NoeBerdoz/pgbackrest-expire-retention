@@ -1,8 +1,9 @@
 """
 Author: Aurélien Clerc
-Goal: Generate a list imitating pgbackrest backups to test the script pgbackrest_backups_retention.py
-The script generates 7 incremental backups a day (00:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00) and 1 full backup
-a day (03:00) between a start and an end date.
+Goal: Generate a list imitating pgbackrest backups to test the script
+pgbackrest_backups_retention.py
+The script generates 7 incremental backups a day (00:00, 06:00, 09:00, 12:00, 15:00,
+18:00, 21:00) and 1 full backup a day (03:00) between a start and an end date.
 """
 
 # Imports
@@ -42,7 +43,8 @@ while current_date <= end_date:
         data_type = "incr"
 
     data = {
-        "label": current_date.strftime("%Y%m%d%H%M%S") + "-003004" + data_type[0].upper(),  # Label format: YYYYMMDDHHMMSS-003004I or -003004F
+        "label": current_date.strftime("%Y%m%d%H%M%S") + "-003004" + data_type[
+            0].upper(),  # Label format: YYYYMMDDHHMMSS-003004I or -003004F
         "timestamp": {
             "start": 0,
             "stop": int(current_date.timestamp())

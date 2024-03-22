@@ -44,18 +44,16 @@ To use the script, follow these steps:
    The parameter mode can be chosen between:
    - dev_sample_data: development mode with artifical data created with the script "pgbackrest_backups_create_database.py" 
    - dev_real_data: development with real data
-   - production: production mode
+   - production: production mode with real data -> if the dry mode is not activated, the backup will be definitely cleaned.
    
     The following parameters can be added to adapt the script to your needs:
-    
     - --retention-incremental 7 (days)
     - --retention-full-daily 30 (days)
     - --retention-full-monthly 12 (months)
     - --retention-full-yearly 20 (years)
 
     
-
-   ** Note that with the current configuration, the script is run in dry-run. Once you have checked that everything works properly, you can remove the parameter "--dry-run" to clean the backups definitely.**
+   **Note that with the current configuration, the script is run in dry-run mode. Once you have checked that everything works properly, you can remove the parameter --dry-run to clean the backups definitely.**
 
 ## Configuration
 

@@ -4,7 +4,7 @@
 
 ## Overview
 
-This Python script utilizes basic `pgbackrest` commands (`info` and `expire`) to manage backups efficiently. The script automates the expiration of incremental and full backups according to the strategy defined by the users.
+This Python script utilizes basic `pgbackrest` commands (`info` and `expire`) to manage backups efficiently. The script automates the expiration of incremental and full backups according to the strategy defined by the user.
 
 ## Retention strategy
 
@@ -37,22 +37,20 @@ To use the script, follow these steps:
 4. Run the script:
 
     ```bash
-    sudo python pgbackrest_backups_retention.py  --stanza your_stanza_name
+    sudo python pgbackrest_backups_retention.py  --stanza your_stanza_name --dry-run
     ```
    _Note that the script needs the permissions to run pgbackrest commands._
    
     The following parameters can be added to adapt the script to your needs:
     
-    --dry-run: Run the script in dry-run mode. Can be removed when you checked that everything works properly to clean the backups definitely.  
-    --mode production  
-    --retention-incremental 7 
-    --retention-full-daily 30 
-    --retention-full-monthly 12 
-    --retention-full-yearly 20
+    - --mode production  
+    - --retention-incremental 7 
+    - --retention-full-daily 30 
+    - --retention-full-monthly 12 
+    - --retention-full-yearly 20
     
 
-
-   **The script is currently with the --dry-run option set, so you can see what would happens in the logs, if you want to exit the dry run, edit `expire_command` variable**
+   ** Note that with the current configuration, the script is run in dry-run. Once you have checked that everything works properly, you can remove the parameter "--dry-run" to clean the backups definitely.**
 
 ## Configuration
 

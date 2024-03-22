@@ -4,7 +4,17 @@
 
 ## Overview
 
-This Python script utilizes basic `pgbackrest` commands (`info` and `expire`) to manage backups efficiently. When executed at the appropriate time, the script automates the expiration of incremental backups that are more than a week old. It also retains the oldest backup per month from the last several months and follows a similar approach for the last years, preserving the oldest backup per year.
+This Python script utilizes basic `pgbackrest` commands (`info` and `expire`) to manage backups efficiently. The script automates the expiration of incremental and full backups according to the strategy defined by the users.
+
+## Retention strategy
+
+In its default configuration, the script follows the following retention strategy:
+- **Incremental Backups**: Expire backups older than 7 days
+- **Daily Backups**: Retain the latest backup per day for each of the last 30 days
+- **Monthly Backups**: Retain the latest backup per month for each of the last 12 months
+- **Yearly Backups**: Retain the latest backup per year for each of the last 20 years
+
+The retention time for each backup type can be adapted to the user need by adding parameters to the script (see below).
 
 ## Usage
 
@@ -27,9 +37,20 @@ To use the script, follow these steps:
 4. Run the script:
 
     ```bash
-    sudo python pgbackrest_backups_retention.py
+    sudo python pgbackrest_backups_retention.py  --stanza your_stanza_name
     ```
    _Note that the script needs the permissions to run pgbackrest commands._
+   
+    The following parameters can be added to adapt the script to your needs:
+    
+    --dry-run: Run the script in dry-run mode. Can be removed when you checked that everything works properly to clean the backups definitely.  
+    --mode production  
+    --retention-incremental 7 
+    --retention-full-daily 30 
+    --retention-full-monthly 12 
+    --retention-full-yearly 20
+    
+
 
    **The script is currently with the --dry-run option set, so you can see what would happens in the logs, if you want to exit the dry run, edit `expire_command` variable**
 
@@ -37,20 +58,10 @@ To use the script, follow these steps:
 
 The script relies on the `pgbackrest` commands `info` and `expire`. Ensure that the script is executed at an appropriate frequency to achieve the desired backup retention strategy.
 
-## Retention Policy
-
-The script follows the following retention policy:
-
-- **Incremental Backups:** Expire backups older than 1 week.
-- **Monthly Backups:** Retain the oldest backup per month from the last 12 months.
-- **Yearly Backups:** Retain the oldest backup per year.
-
-When entering a new year, the retention will stick to the monthly approach for the last 365 days.
 
 ---
 # Potential improvements
 - Optimize the <365 days retentions
-- Make the retention strategy configurable
 - What if this was all set in an Odoo module
 ---
 

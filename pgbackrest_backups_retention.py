@@ -15,6 +15,7 @@ try:
     import subprocess
     import time
     import argparse
+    from argparse import RawTextHelpFormatter
     import humanize
     from itertools import groupby
 except ImportError as error:
@@ -28,22 +29,34 @@ FULL = 'full'
 INCREMENTAL = 'incr'
 
 # Parse command-line arguments
-parser = argparse.ArgumentParser(description='Backup Retention Script')
-parser.add_argument('--stanza', default='db-production-swiss',
+parser = argparse.ArgumentParser(description='Backup Retention Script',
+                                 epilog='Example:\n'
+                                        'If you want to keep all incremental backups of the last 7 days,\n'
+                                        'the latest full backup for each of the last 30 days,\n'
+                                        'the latest full backup for each of the last 12 months,\n'
+                                        'the latest full backup for each of the last 20 years,\n'
+                                        'you can run the following command:\n'
+                                        'pgbackrest_backups_retention --stanza your_stanza_name --dry-run --mode production --retention-incremental 7 --retention-full-daily 30 --retention-full-monthly 12 --retention-full-yearly 20\n'
+                                        'Once you have checked that everything works properly, you can remove the dry-run to clean your backups definitely.',
+                                 formatter_class=RawTextHelpFormatter
+                                 )
+parser.add_argument('--stanza',
                     help='specify the PgBackRest stanza')
 parser.add_argument('--log-file', default='pgbackrest_backups_retention.log',
                     help='specify the log file path')
 parser.add_argument('--dry-run', action='store_true', help='run in dry-run mode')
 parser.add_argument('--mode', default='dev_real_database',
-                    help='Specify the mode: dev_sample_data, dev_real_data, production')
-parser.add_argument('--incr-BU-RT', default=7,
-                    help='Retention time in days for incremental backups.')
-parser.add_argument('--full-daily-BU-RT', default=30,
-                    help='Retention time in days for full daily backups.')
-parser.add_argument('--full-monthly-BU-RT', default=12,
-                    help='Retention time in months for full monthly backups.')
-parser.add_argument('--full-yearly-BU-RT', default=20,
-                    help='Retention time in years for full yearly backups.')
+                    help='Specify the mode:\n- dev_sample_data: dev mode with artificial data created with the script "pgbackrest_backups_create_database.py"' 
+                    '\n- dev_real_data: dev mode with real data'
+                    '\n- production: production mode with real data -> if the dry mode is not activated, the backup will definitely be cleaned.')
+parser.add_argument('--retention-incremental', default=7,
+                    help='Retention time in days for incremental backups (default value: 7 days)')
+parser.add_argument('--retention-full-daily', default=30,
+                    help='Retention time in days for full daily backups (default value: 30 days)')
+parser.add_argument('--retention-full-monthly', default=12,
+                    help='Retention time in months for full monthly backups (default value: 12 months)')
+parser.add_argument('--retention-full-yearly', default=20,
+                    help='Retention time in years for full yearly backups (default value: 20 years)')
 
 args = parser.parse_args()
 
@@ -51,10 +64,10 @@ dry_run = args.dry_run
 stanza = args.stanza
 log_file_path = args.log_file
 mode = args.mode
-incr_backups_retention_time = int(args.incr_BU_RT)
-full_daily_backup_retention_time = int(args.full_daily_BU_RT)
-full_monthly_backup_retention_time = int(args.full_monthly_BU_RT)
-full_yearly_backup_retention_time = int(args.full_yearly_BU_RT)
+incr_backups_retention_time = int(args.retention_incremental)
+full_daily_backup_retention_time = int(args.retention_full_daily)
+full_monthly_backup_retention_time = int(args.retention_full_monthly)
+full_yearly_backup_retention_time = int(args.retention_full_yearly)
 
 # possible value for --mode : dev_sample_data, dev_real_data, production
 

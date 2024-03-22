@@ -15,6 +15,7 @@ try:
     import subprocess
     import time
     import argparse
+    from argparse import RawTextHelpFormatter
     import humanize
     from itertools import groupby
 except ImportError as error:
@@ -24,33 +25,55 @@ except ImportError as error:
     print("pip install json sys humanize")
     sys.exit(1)
 
-# Retention parameters definition
-incr_backups_retention_time = 7 #days
-full_daily_backup_retention_time = 30 #days
-full_monthly_backup_retention_time = 12 #months
-full_yearly_backup_retention_time = 20 #years
-
 FULL = 'full'
 INCREMENTAL = 'incr'
 
 # Parse command-line arguments
-parser = argparse.ArgumentParser(description='Backup Retention Script')
-parser.add_argument('--stanza', default='db-production-swiss', help='specify the PgBackRest stanza')
-parser.add_argument('--log-file', default='pgbackrest_backups_retention.log', help='specify the log file path')
+parser = argparse.ArgumentParser(description='Backup Retention Script',
+                                 epilog='Example:\n'
+                                        'If you want to keep all incremental backups of the last 7 days,\n'
+                                        'the latest full backup for each of the last 30 days,\n'
+                                        'the latest full backup for each of the last 12 months,\n'
+                                        'the latest full backup for each of the last 20 years,\n'
+                                        'you can run the following command:\n'
+                                        'pgbackrest_backups_retention --stanza your_stanza_name --dry-run --mode production --retention-incremental 7 --retention-full-daily 30 --retention-full-monthly 12 --retention-full-yearly 20\n'
+                                        'Once you have checked that everything works properly, you can remove the dry-run to clean your backups definitely.',
+                                 formatter_class=RawTextHelpFormatter
+                                 )
+parser.add_argument('--stanza',
+                    help='specify the PgBackRest stanza')
+parser.add_argument('--log-file', default='pgbackrest_backups_retention.log',
+                    help='specify the log file path')
 parser.add_argument('--dry-run', action='store_true', help='run in dry-run mode')
-parser.add_argument('--mode', default='dev_real_database', help='Specify the mode: dev_sample_data, dev_real_data, production')
+parser.add_argument('--mode', default='dev_real_database',
+                    help='Specify the mode:\n- dev_sample_data: dev mode with artificial data created with the script "pgbackrest_backups_create_database.py"' 
+                    '\n- dev_real_data: dev mode with real data'
+                    '\n- production: production mode with real data -> if the dry mode is not activated, the backup will definitely be cleaned.')
+parser.add_argument('--retention-incremental', default=7,
+                    help='Retention time in days for incremental backups (default value: 7 days)')
+parser.add_argument('--retention-full-daily', default=30,
+                    help='Retention time in days for full daily backups (default value: 30 days)')
+parser.add_argument('--retention-full-monthly', default=12,
+                    help='Retention time in months for full monthly backups (default value: 12 months)')
+parser.add_argument('--retention-full-yearly', default=20,
+                    help='Retention time in years for full yearly backups (default value: 20 years)')
+
 args = parser.parse_args()
 
 dry_run = args.dry_run
 stanza = args.stanza
 log_file_path = args.log_file
 mode = args.mode
+incr_backups_retention_time = int(args.retention_incremental)
+full_daily_backup_retention_time = int(args.retention_full_daily)
+full_monthly_backup_retention_time = int(args.retention_full_monthly)
+full_yearly_backup_retention_time = int(args.retention_full_yearly)
 
 # possible value for --mode : dev_sample_data, dev_real_data, production
 
 # In dev mode ?
 DEV = False
-if mode == 'dev_real_data' or mode =='dev_sample_data':
+if mode == 'dev_real_data' or mode == 'dev_sample_data':
     DEV = True
 
 # Import the backup from the real data with pgbackrest
@@ -84,7 +107,7 @@ today_datetime = datetime.utcnow().replace(hour=0, minute=0, second=0, microseco
 # today_datetime = current_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
 
 ####### LISTS #######
-backups_to_keep = [] #List that store all the backup we want to keep
+backups_to_keep = []  # List that store all the backup we want to keep
 
 ####### COUNTERS #######
 counter_backups_incremental = 0
@@ -100,13 +123,14 @@ def add_log_line(line):
     print(line)
     sys.stdout.close()
 
+
 # Execute expire commands that removes given backup
 def expire_backup(backup):
     global counter_backups_expired
     global counter_expired_size
 
     backup_label = backup['label']
-    if DEV:
+    if mode == 'dev_sample_data':
         backup_size = 0
     else:
         backup_size = backup['info']['repository']['delta']
@@ -121,7 +145,8 @@ def expire_backup(backup):
 
     if mode == 'production':
         # Execute the expire command
-        process = subprocess.Popen(expire_command, shell=True, stdout=subprocess.PIPE, text=True, bufsize=1,
+        process = subprocess.Popen(expire_command, shell=True, stdout=subprocess.PIPE,
+                                   text=True, bufsize=1,
                                    universal_newlines=True)
 
         # Read and process the output line by line
@@ -132,6 +157,7 @@ def expire_backup(backup):
         # Wait for the subprocess to finish
         process.wait()
 
+
 # Function to get the backup day
 def get_day(backup):
     if not backup:
@@ -139,12 +165,14 @@ def get_day(backup):
 
     return datetime.utcfromtimestamp(backup['timestamp']['stop']).day
 
+
 # Function to get the backup month
 def get_month(backup):
     if not backup:
         return
 
     return datetime.utcfromtimestamp(backup['timestamp']['stop']).month
+
 
 # Function to get the backup year
 def get_year(backup):
@@ -157,11 +185,15 @@ def get_year(backup):
 ### Select the incremental and daily full backups to keep ###
 for backup in sorted_backups_data:
     # Keep incremental backups less xxx days old (as defined above):
-    if backup["type"] == 'incr' and backup['timestamp']["stop"] > current_time_timestamp - timedelta(days=incr_backups_retention_time).total_seconds():
+    if backup["type"] == 'incr' and backup['timestamp'][
+        "stop"] > current_time_timestamp - timedelta(
+        days=incr_backups_retention_time).total_seconds():
         backups_to_keep.append(backup)
 
     # Keep full backups less than xxx months old (as defined above):
-    if backup["type"] == 'full' and backup['timestamp']["stop"] > current_time_timestamp - timedelta(days=full_daily_backup_retention_time).total_seconds():
+    if backup["type"] == 'full' and backup['timestamp'][
+        "stop"] > current_time_timestamp - timedelta(
+        days=full_daily_backup_retention_time).total_seconds():
         backups_to_keep.append(backup)
 
 ### Select the monthly backups to keep ###
@@ -173,15 +205,16 @@ month_diff = full_monthly_backup_retention_time % 12
 month = current_datetime.month - month_diff
 year = current_datetime.year - year_diff
 if month < 1:
-    month+=12
-    year-=1
+    month += 12
+    year -= 1
 
 # Loop over all the months where the monthly backups have to be retained. Keep the last full backup of each of these
 # months
 for i in range(full_monthly_backup_retention_time):
     all_full_backup_of_the_month = []
     for backup in sorted_backups_data:
-        if backup["type"] == 'full' and get_month(backup) == month and get_year(backup) == year:
+        if backup["type"] == 'full' and get_month(backup) == month and get_year(
+                backup) == year:
             all_full_backup_of_the_month.append(backup)
 
     if not all_full_backup_of_the_month:
@@ -191,9 +224,9 @@ for i in range(full_monthly_backup_retention_time):
 
     # to the next month
     if month != 12:
-        month +=1
+        month += 1
     else:
-        year +=1
+        year += 1
         month = 1
 
 ### Select the yearly backups to keep ###
@@ -201,7 +234,7 @@ year = get_year(sorted_backups_data[0])
 start_year = current_datetime.year - full_yearly_backup_retention_time
 # Loop over all the years where the yearly backups have to be retained. Keep the last full backup of each of these
 # years
-for year in range(start_year, current_datetime.year+1):
+for year in range(start_year, current_datetime.year + 1):
     all_full_backup_of_the_year = []
     for backup in sorted_backups_data:
         if backup["type"] == 'full' and get_year(backup) == year:
@@ -227,7 +260,6 @@ else:
     add_log_line('------------------------')
     add_log_line(f"Launching script on: {current_datetime} (mode={mode})")
 
-
 # Clean expired full backups
 for backup in sorted_backups_data:
     backup_type = backup['type']
@@ -235,10 +267,11 @@ for backup in sorted_backups_data:
         backup_size = backup['info']['repository']['delta']
     else:
         backup_size = 0
-    backup_stop_datetime = datetime.utcfromtimestamp(backup['timestamp']['stop'])  # Unix timestamp conversion
+    backup_stop_datetime = datetime.utcfromtimestamp(
+        backup['timestamp']['stop'])  # Unix timestamp conversion
     backup_label = backup['label']
 
-    #increment total size counter
+    # increment total size counter
     counter_total_size += backup_size
 
     if backup_type == INCREMENTAL:
@@ -254,9 +287,14 @@ if mode == ('dev_sample_data'):
     print(f"Number of full backups: {counter_backups_full}")
     print(f"Number of incremental backups: {counter_backups_incremental}")
     print(f"Number of expired backups cleaned: {counter_backups_expired}")
-    print(f"Size of expired: {humanize.naturalsize(counter_expired_size)} (=0 because backups in sample data have no size)")
-    print(f"Total size: {humanize.naturalsize(counter_total_size)} (=0 because backups in sample data have no size)")
-    print(f"remaining size: {humanize.naturalsize(counter_total_size - counter_expired_size)} (=0 because backups in sample data have no size)")
+    print(
+        f"Size of expired: {humanize.naturalsize(counter_expired_size)} "
+        f"(=0 because backups in sample data have no size)")
+    print(
+        f"Total size: {humanize.naturalsize(counter_total_size)} "
+        f"(=0 because backups in sample data have no size)")
+    print(
+        f"remaining size: {humanize.naturalsize(counter_total_size - counter_expired_size)} (=0 because backups in sample data have no size)")
 elif mode == 'dev_real_data':
     print("-------- Resume --------")
     print(f"Number of full backups: {counter_backups_full}")
@@ -264,7 +302,8 @@ elif mode == 'dev_real_data':
     print(f"Number of expired backups cleaned: {counter_backups_expired}")
     print(f"Size of expired: {humanize.naturalsize(counter_expired_size)}")
     print(f"Total size: {humanize.naturalsize(counter_total_size)}")
-    print(f"remaining size: {humanize.naturalsize(counter_total_size - counter_expired_size)}")
+    print(
+        f"remaining size: {humanize.naturalsize(counter_total_size - counter_expired_size)}")
 else:
     add_log_line("-------- Resume --------")
     add_log_line(f"Number of full backups: {counter_backups_full}")
@@ -272,4 +311,5 @@ else:
     add_log_line(f"Number of expired backups cleaned: {counter_backups_expired}")
     add_log_line(f"Size of expired: {humanize.naturalsize(counter_expired_size)}")
     add_log_line(f"Total size: {humanize.naturalsize(counter_total_size)}")
-    add_log_line(f"remaining size: {humanize.naturalsize(counter_total_size - counter_expired_size)}")
+    add_log_line(
+        f"remaining size: {humanize.naturalsize(counter_total_size - counter_expired_size)}")

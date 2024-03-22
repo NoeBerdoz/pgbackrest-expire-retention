@@ -37,17 +37,22 @@ To use the script, follow these steps:
 4. Run the script:
 
     ```bash
-    sudo python pgbackrest_backups_retention.py  --stanza your_stanza_name --dry-run
+    sudo python pgbackrest_backups_retention.py  --stanza your_stanza_name --dry-run --mode production
     ```
    _Note that the script needs the permissions to run pgbackrest commands._
    
+   The parameter mode can be chosen between:
+   - dev_sample_data: development mode with artifical data created with the script "pgbackrest_backups_create_database.py" 
+   - dev_real_data: development with real data
+   - production: production mode
+   
     The following parameters can be added to adapt the script to your needs:
     
-    - --mode production  
-    - --retention-incremental 7 
-    - --retention-full-daily 30 
-    - --retention-full-monthly 12 
-    - --retention-full-yearly 20
+    - --retention-incremental 7 (days)
+    - --retention-full-daily 30 (days)
+    - --retention-full-monthly 12 (months)
+    - --retention-full-yearly 20 (years)
+
     
 
    ** Note that with the current configuration, the script is run in dry-run. Once you have checked that everything works properly, you can remove the parameter "--dry-run" to clean the backups definitely.**

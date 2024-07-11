@@ -135,7 +135,7 @@ def expire_backup(backup):
     else:
         backup_size = backup['info']['repository']['delta']
 
-    expire_command = f"sudo pgbackrest expire --stanza={stanza} --set={backup_label} --log-level-console=detail {'--dry-run' if dry_run else ''}"
+    expire_command = f"pgbackrest expire --stanza={stanza} --set={backup_label} --log-level-console=detail {'--dry-run' if dry_run else ''}"
     if DEV:
         print(f"(Dev mode) [+] {expire_command}")
     else:
